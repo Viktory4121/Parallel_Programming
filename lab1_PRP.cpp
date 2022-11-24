@@ -2,7 +2,10 @@
 #include<random>
 #include<vector>
 #include<float.h>
-#include"math.h"
+#include<math.h>
+//#include<stdio.h> 
+#include<time.h> 
+//#include <chrono>
 
 using namespace std;
 
@@ -26,7 +29,8 @@ public:
         int max_ = this->eps;
 
         for (int i = 0; i < this->k; i++) {
-            x.push_back(rand() % max_ + min_);
+            double f = (double)rand() / RAND_MAX;
+            x.push_back(min_ + f * (max_ - min_));
         }
         return x;
     }
@@ -60,15 +64,29 @@ public:
 
 
 int main() {
-    int count_iter = 100000000000000000;
-    int epsilon = 10000000;
+    clock_t start = clock();
+    //auto begin = chrono::steady_clock::now();
+
+    int count_iter = 10000000;
+    int epsilon = 10;
     int count_var = 2;
 
     MonteCarlo mc = MonteCarlo(count_iter, epsilon, count_var);
     vector<double> rezult_x = mc.method();
     double rezult_f = mc.function(rezult_x);
+
+    cout << "X_opt: ";
     for (int i = 0; i < count_var; i++) {
         cout << rezult_x[i] << " ";
     }
-    cout << " " << rezult_f;
+    cout << "\nF(X_opt): " << rezult_f;
+
+    clock_t end = clock();
+    double seconds = (double)(end - start) / CLOCKS_PER_SEC;
+    //auto end = std::chrono::steady_clock::now();
+    //auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+    cout << "\nTime: " << seconds << " s";
+    //cout << "\nTime: " << elapsed_ms.count() << " ms";
+
 }
