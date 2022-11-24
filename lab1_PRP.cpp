@@ -3,9 +3,8 @@
 #include<vector>
 #include<float.h>
 #include<math.h>
-//#include<stdio.h> 
-#include<time.h> 
-//#include <chrono>
+#include <thread>
+#include<time.h>
 
 using namespace std;
 
@@ -35,21 +34,40 @@ public:
         return x;
     }
 
-    vector<double> method() {
-        double f_min = DBL_MAX, fi;
-        vector<double> x_min, xi;
+    vector<double> cycle_method(int N, double f, vector<double> &xi) {
+        double fi, f_min = f;
+        vector<double> x_min;
         int i = 0;
 
-        while (i < this->N) {
+        while (i < N) {
             xi = randomPoint();
             fi = function(xi);
-            
+
             if (fi < f_min) {
                 x_min = xi;
                 f_min = fi;
             }
             i++;
         }
+    }
+
+    vector<double> method() {
+        double f_min = DBL_MAX;
+        vector<double> xi1, xi2, xi;
+        int count = this->N;
+
+        //thread t1(cycle_method, count / 2, f_min, ref(xi1));
+        //thread t2(cycle_method, count - count/2, f_min, ref(xi2));
+
+        thread t1([&]() { cycle_method(count / 2, f_min, ref(xi1)); });
+        thread t2([&]() { cycle_method(count - count / 2, f_min, ref(xi2)); });
+        t1.join();
+        t2.join();
+
+        //vector<double> xi = cycle_method(count, f_min, xi);
+
+        if (function(xi1) <= function(xi2)) xi = xi1;
+        else xi = xi2;
 
         return xi;
     }
