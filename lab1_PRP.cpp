@@ -3,16 +3,18 @@
 #include<vector>
 #include<float.h>
 #include<math.h>
-#include <thread>
+#include<thread>
+#include<future>
 #include<time.h>
+#include<ppltasks.h> //для создания динамического добавления потоков
 
 using namespace std;
 
 class MonteCarlo {
 
     int N;              //количество итераций
-    int eps;            //количество итераций
-    int k;              //количество итераций
+    int eps;            //генерация внутри заданной границы от -eps до eps
+    int k;              //количество переменных
 
 public:
 
@@ -26,41 +28,49 @@ public:
         vector <double > x;
         int min_ = -this->eps;
         int max_ = this->eps;
+        double f = 0;
 
         for (int i = 0; i < this->k; i++) {
-            double f = (double)rand() / RAND_MAX;
+            f = (double)rand() / RAND_MAX;
             x.push_back(min_ + f * (max_ - min_));
         }
         return x;
     }
 
-    vector<double> cycle_method(int N, double f, vector<double> &xi) {
+    void cycle_method(int N, double f, promise <double[3]> xi) {
         double fi, f_min = f;
         vector<double> x_min;
+        vector<double> x;
         int i = 0;
+        x = randomPoint();
 
         while (i < N) {
-            xi = randomPoint();
-            fi = function(xi);
+            x = randomPoint();
+            fi = function(x);
 
             if (fi < f_min) {
-                x_min = xi;
+                x_min = x;
                 f_min = fi;
             }
             i++;
         }
+        xi.set_value(x);
     }
 
     vector<double> method() {
         double f_min = DBL_MAX;
         vector<double> xi1, xi2, xi;
         int count = this->N;
+        promise <double[3]> xi1, xi2;
+        future <double[3]> c_m1 = xi1.get_future(), c_m2 = xi2.get_future();
 
-        //thread t1(cycle_method, count / 2, f_min, ref(xi1));
-        //thread t2(cycle_method, count - count/2, f_min, ref(xi2));
+        thread t1(cycle_method, count / 2, f_min, move(xi1));
+        thread t2(cycle_method, count - count/2, f_min, move(xi2));
 
-        thread t1([&]() { cycle_method(count / 2, f_min, ref(xi1)); });
-        thread t2([&]() { cycle_method(count - count / 2, f_min, ref(xi2)); });
+        c_m1.get();
+        c_m2.get();
+        //thread t1([&]() { cycle_method(count / 2, f_min, move(xi1)); });
+        //thread t2([&]() { cycle_method(count - count / 2, f_min, move(xi2)); });
         t1.join();
         t2.join();
 
@@ -83,7 +93,6 @@ public:
 
 int main() {
     clock_t start = clock();
-    //auto begin = chrono::steady_clock::now();
 
     int count_iter = 10000000;
     int epsilon = 10;
@@ -101,10 +110,7 @@ int main() {
 
     clock_t end = clock();
     double seconds = (double)(end - start) / CLOCKS_PER_SEC;
-    //auto end = std::chrono::steady_clock::now();
-    //auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
     cout << "\nTime: " << seconds << " s";
-    //cout << "\nTime: " << elapsed_ms.count() << " ms";
 
 }
